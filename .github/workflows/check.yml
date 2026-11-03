@@ -1,0 +1,42 @@
+name: check
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Capture native profile on this platform
+        run: nix run . -- --project examples/minimal lock
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-profiles-${{ matrix.runner }}
+          path: |
+            examples/minimal/xmake-requires.lock
+            examples/minimal/xmake-purifier.lock.json
+      - run: python3 tests/eval-errors.py
+      - run: nix flake check -L
+      - run: tests/conformance-rebuild.sh
+  conformance:
+    name: conformance-${{ matrix.case }} (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+        case: [relock, update, external, native, tasks]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - run: python3 tests/host-conformance.py "${{ matrix.case }}"

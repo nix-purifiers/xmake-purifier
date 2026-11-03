@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.log
+result
+cli-native
+.xmake/
+.xmake-purifier/
+build/
+compile_commands.json

@@ -1,0 +1,143 @@
+{
+  "manifests": {
+    "xmake.lua": {
+      "content": "set_project(\"purifier-example\")\nset_version(\"0.1.0\")\nset_languages(\"c11\")\nset_policy(\"package.requires_lock\", true)\nadd_requires(\"zlib 1.3.1\", {system = false, configs = {shared = false}})\ntarget(\"purifier-example\")\n  set_kind(\"binary\")\n  add_files(\"src/main.c\")\n  add_packages(\"zlib\")\n\n    add_tests(\"smoke\")\n",
+      "sha256": "e23b8a70addcda7f766392b10ed240c62003cd84ed5b7ac5ec9c480e17a57002"
+    }
+  },
+  "nativeHash": "d4b2c6e9ed3ed8cc3b265fbd6c3c995378f3b36dc99b59b891e9a4acc0bb3a06",
+  "profiles": {
+    "x86_64-linux:debug": {
+      "entries": [
+        {
+          "hash": "sha256-F+iIY/NgBnKrSRgvIXKBtvxNPHYr3jYZNeQ2qVIU0Fw=",
+          "mirrors": [],
+          "path": "17e88863f3600672ab49182f217281b6fc4d3c762bde361935e436a95214d05c",
+          "url": "https://github.com/madler/zlib/archive/refs/tags/v1.3.1.tar.gz"
+        },
+        {
+          "git": {
+            "commitObject": null,
+            "leaveDotGit": false,
+            "rev": "2821c809e9906b14b38f4690d24aabf35f6b3163",
+            "submodules": false,
+            "url": "https://github.com/xmake-io/xmake-repo.git"
+          },
+          "hash": "sha256-HYCx2+2NUydr5L7n8pTTZjptKRECVxzwocVDkC6P7zM=",
+          "path": "repositories/0475730f4c74ef62a11c7164abecc1b8.lock/2821c809e9906b14b38f4690d24aabf35f6b3163"
+        }
+      ],
+      "manifests": {
+        "xmake.lua": {
+          "content": "set_project(\"purifier-example\")\nset_version(\"0.1.0\")\nset_languages(\"c11\")\nset_policy(\"package.requires_lock\", true)\nadd_requires(\"zlib 1.3.1\", {system = false, configs = {shared = false}})\ntarget(\"purifier-example\")\n  set_kind(\"binary\")\n  add_files(\"src/main.c\")\n  add_packages(\"zlib\")\n\n    add_tests(\"smoke\")\n",
+          "sha256": "e23b8a70addcda7f766392b10ed240c62003cd84ed5b7ac5ec9c480e17a57002"
+        }
+      },
+      "mode": "debug",
+      "nativeLock": "{\n    __meta__ = {\n        version = \"1.0\"\n    },\n    [\"linux|x86_64\"] = {\n        [\"zlib 1.3.1#a0c24696\"] = {\n            repo = {\n                branch = \"master\",\n                commit = \"2821c809e9906b14b38f4690d24aabf35f6b3163\",\n                url = \"https://github.com/xmake-io/xmake-repo.git\"\n            },\n            version = \"v1.3.1\"\n        }\n    }\n}",
+      "packages": [
+        {
+          "buildhash": "994fafa590ed48ac9f71516cc846d155",
+          "kind": "library",
+          "name": "zlib",
+          "repo": {
+            "branch": "master",
+            "commit": "2821c809e9906b14b38f4690d24aabf35f6b3163",
+            "name": "0475730f4c74ef62a11c7164abecc1b8.lock",
+            "url": "https://github.com/xmake-io/xmake-repo.git"
+          },
+          "require": "zlib 1.3.1",
+          "requires": {
+            "arch": "x86_64",
+            "configs": {
+              "debug": false,
+              "pic": true,
+              "shared": false,
+              "zutil": false
+            },
+            "plat": "linux"
+          },
+          "version": "v1.3.1"
+        }
+      ],
+      "repositories": [
+        {
+          "branch": "master",
+          "commit": "2821c809e9906b14b38f4690d24aabf35f6b3163",
+          "name": "0475730f4c74ef62a11c7164abecc1b8.lock",
+          "url": "https://github.com/xmake-io/xmake-repo.git"
+        }
+      ],
+      "system": "x86_64-linux"
+    },
+    "x86_64-linux:release": {
+      "entries": [
+        {
+          "hash": "sha256-F+iIY/NgBnKrSRgvIXKBtvxNPHYr3jYZNeQ2qVIU0Fw=",
+          "mirrors": [],
+          "path": "17e88863f3600672ab49182f217281b6fc4d3c762bde361935e436a95214d05c",
+          "url": "https://github.com/madler/zlib/archive/refs/tags/v1.3.1.tar.gz"
+        },
+        {
+          "git": {
+            "commitObject": null,
+            "leaveDotGit": false,
+            "rev": "2821c809e9906b14b38f4690d24aabf35f6b3163",
+            "submodules": false,
+            "url": "https://github.com/xmake-io/xmake-repo.git"
+          },
+          "hash": "sha256-HYCx2+2NUydr5L7n8pTTZjptKRECVxzwocVDkC6P7zM=",
+          "path": "repositories/0475730f4c74ef62a11c7164abecc1b8.lock/2821c809e9906b14b38f4690d24aabf35f6b3163"
+        }
+      ],
+      "manifests": {
+        "xmake.lua": {
+          "content": "set_project(\"purifier-example\")\nset_version(\"0.1.0\")\nset_languages(\"c11\")\nset_policy(\"package.requires_lock\", true)\nadd_requires(\"zlib 1.3.1\", {system = false, configs = {shared = false}})\ntarget(\"purifier-example\")\n  set_kind(\"binary\")\n  add_files(\"src/main.c\")\n  add_packages(\"zlib\")\n\n    add_tests(\"smoke\")\n",
+          "sha256": "e23b8a70addcda7f766392b10ed240c62003cd84ed5b7ac5ec9c480e17a57002"
+        }
+      },
+      "mode": "release",
+      "nativeLock": "{\n    __meta__ = {\n        version = \"1.0\"\n    },\n    [\"linux|x86_64\"] = {\n        [\"zlib 1.3.1#a0c24696\"] = {\n            repo = {\n                branch = \"master\",\n                commit = \"2821c809e9906b14b38f4690d24aabf35f6b3163\",\n                url = \"https://github.com/xmake-io/xmake-repo.git\"\n            },\n            version = \"v1.3.1\"\n        }\n    }\n}",
+      "packages": [
+        {
+          "buildhash": "994fafa590ed48ac9f71516cc846d155",
+          "kind": "library",
+          "name": "zlib",
+          "repo": {
+            "branch": "master",
+            "commit": "2821c809e9906b14b38f4690d24aabf35f6b3163",
+            "name": "0475730f4c74ef62a11c7164abecc1b8.lock",
+            "url": "https://github.com/xmake-io/xmake-repo.git"
+          },
+          "require": "zlib 1.3.1",
+          "requires": {
+            "arch": "x86_64",
+            "configs": {
+              "debug": false,
+              "pic": true,
+              "shared": false,
+              "zutil": false
+            },
+            "plat": "linux"
+          },
+          "version": "v1.3.1"
+        }
+      ],
+      "repositories": [
+        {
+          "branch": "master",
+          "commit": "2821c809e9906b14b38f4690d24aabf35f6b3163",
+          "name": "0475730f4c74ef62a11c7164abecc1b8.lock",
+          "url": "https://github.com/xmake-io/xmake-repo.git"
+        }
+      ],
+      "system": "x86_64-linux"
+    }
+  },
+  "toolVersions": {
+    "gcc": "16.2.0",
+    "sdk": "8c73cf8a52d8131af78c10aca5410ca2ae8f4ba2eac0b147c92957ff8945eafe",
+    "xmake": "3.1.2"
+  },
+  "version": 1
+}

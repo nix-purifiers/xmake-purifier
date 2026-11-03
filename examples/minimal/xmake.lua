@@ -1,0 +1,11 @@
+set_project("purifier-example")
+set_version("0.1.0")
+set_languages("c11")
+set_policy("package.requires_lock", true)
+add_requires("zlib 1.3.1", {system = false, configs = {shared = false}})
+target("purifier-example")
+  set_kind("binary")
+  add_files("src/main.c")
+  add_packages("zlib")
+
+    add_tests("smoke")

@@ -1,0 +1,319 @@
+--- a/xmake/core/package/package.lua
++++ b/xmake/core/package/package.lua
+@@ -946,7 +946,7 @@
+                 -- deprecated, @see the `addon` kind
+                 installdir = path.join(global.directory(), "plugins", name)
+             else
+-                if self:is_local() then
++                if self:is_local() and not os.getenv("XMAKE_PURIFIER_REPOSITORIES") then
+                     installdir = path.join(package.installdir({localdir = true}), name:sub(1, 1):lower(), name)
+                 else
+                     installdir = path.join(package.installdir(), name:sub(1, 1):lower(), name)
+@@ -3163,6 +3163,9 @@
+ -- @return the package instance and errors
+ --
+ function package.load_from_system(packagename)
++    if os.getenv("XMAKE_PURIFIER_REPOSITORIES") then
++        os.raise("system/third-party package providers are not prepared by xmake-purifier: %s", packagename)
++    end
+ 
+     -- get package info
+     local instance
+--- a/xmake/core/package/repository.lua
++++ b/xmake/core/package/repository.lua
+@@ -55,6 +55,10 @@
+     return self._NAME
+ end
+ 
++function _instance:name_set(name)
++    self._NAME = name
++end
++
+ -- get the repository url
+ --
+ -- @return      the url string
+@@ -180,7 +184,7 @@
+     end
+ 
+     -- the repository directory
+-    local repodir = os.isdir(url) and path.absolute(url) or path.join(repository.directory(is_global), name)
++    local repodir = os.getenv("XMAKE_PURIFIER_REPOSITORIES") and path.join(os.getenv("XMAKE_PURIFIER_REPOSITORIES"), name) or (os.isdir(url) and path.absolute(url) or path.join(repository.directory(is_global), name))
+ 
+     -- new an instance
+     local instance, errors = _instance.new(name, url, branch, repodir, is_global)
+--- a/xmake/core/project/project.lua
++++ b/xmake/core/project/project.lua
+@@ -970,6 +970,7 @@
+ 
+ -- get the global rcfiles: ~/.xmakerc.lua
+ function project.rcfiles()
++    if os.getenv("XMAKE_PURIFIER_CAPTURE") or os.getenv("XMAKE_PURIFIER_REPOSITORIES") then return {} end
+     local rcfiles = project._XMAKE_RCFILES
+     if rcfiles == nil then
+         rcfiles = {}
+@@ -1078,6 +1079,10 @@
+ 
+ -- get the project policy, the root policy of the target scope
+ function project.policy(name)
++    if os.getenv("XMAKE_PURIFIER_CAPTURE") or os.getenv("XMAKE_PURIFIER_REPOSITORIES") then
++        if name == "package.requires_lock" then return true end
++        if name == "package.precompiled" then return false end
++    end
+     local policies = project._memcache():get("policies")
+     if not policies then
+ 
+@@ -1382,6 +1387,9 @@
+ 
+ -- get requires lockfile
+ function project.requireslock()
++    local external = os.getenv("XMAKE_PURIFIER_NATIVE_LOCK")
++    local root = os.getenv("XMAKE_PURIFIER_PROJECT")
++    if external and root == project.directory() then return external end
+     return path.join(project.directory(), "xmake-requires.lock")
+ end
+ 
+--- a/xmake/modules/package/manager/xmake/find_package.lua
++++ b/xmake/modules/package/manager/xmake/find_package.lua
+@@ -245,7 +245,7 @@
+ 
+     -- update the project references file
+     local projectdir = os.projectdir()
+-    if projectdir and os.isdir(projectdir) then
++    if projectdir and os.isdir(projectdir) and not os.getenv("XMAKE_PURIFIER_REPOSITORIES") then
+         local references_file = path.join(installdir, "references.txt")
+         local references = os.isfile(references_file) and io.load(references_file) or {}
+         references[projectdir] = os.date("%y%m%d")
+--- a/xmake/modules/private/action/require/download.lua
++++ b/xmake/modules/private/action/require/download.lua
+@@ -35,6 +35,11 @@
+     local requires_extra = nil
+     local requires, requires_extra = get_requires(requires_raw)
+     if not requires or #requires == 0 then
++        if os.getenv("XMAKE_PURIFIER_CAPTURE") then
++            environment.enter()
++            download_packages({}, {requires_extra = requires_extra})
++            environment.leave()
++        end
+         return
+     end
+ 
+--- a/xmake/modules/private/action/require/impl/actions/download.lua
++++ b/xmake/modules/private/action/require/impl/actions/download.lua
+@@ -191,7 +191,12 @@
+         os.tryrm(packagefile)
+ 
+         -- download or copy package file
+-        if os.isfile(url) then
++        if os.getenv("XMAKE_PURIFIER_BLOBS") then
++            assert(sourcehash, "Nix archive provider requires a native source checksum")
++            local blob = path.join(os.getenv("XMAKE_PURIFIER_BLOBS"), sourcehash)
++            assert(os.isfile(blob), "source archive not prepared by Nix: " .. package:name())
++            os.cp(blob, packagefile)
++        elseif os.isfile(url) then
+             os.cp(url, packagefile)
+         else
+             local localfile
+@@ -230,6 +235,16 @@
+         end
+     end
+ 
++    if os.getenv("XMAKE_PURIFIER_CAPTURE") then
++        import("core.base.json")
++        local root = os.getenv("XMAKE_PURIFIER_CAPTURE") .. ".archives"
++        os.mkdir(root)
++        local digest = hash.sha256(packagefile)
++        os.cp(packagefile, path.join(root, digest))
++        io.writefile(path.join(root, digest .. "-" .. hash.strhash128(package:name() .. package:version_str()) .. ".json"), json.encode({url=url, sha256=digest,
++            name=package:name(), version=package:version_str(), filename=path.filename(packagefile)}, {orderkeys=true}))
++    end
++
+     -- we do not extract it if we download only it.
+     if opt.download_only then
+         tty.erase_line_to_start().cr()
+--- a/xmake/modules/private/action/require/impl/download_packages.lua
++++ b/xmake/modules/private/action/require/impl/download_packages.lua
+@@ -23,6 +23,7 @@
+ import("core.base.hashset")
+ import("core.base.scheduler")
+ import("core.project.project")
++import("core.project.config")
+ import("core.base.tty")
+ import("async.runjobs")
+ import("utils.waiting_indicator", {alias = "waiting_indicator"})
+@@ -301,6 +302,33 @@
+ 
+     -- download all required packages from repositories
+     _download_packages(packages_download)
++    if os.getenv("XMAKE_PURIFIER_CAPTURE") then
++        import("private.action.require.impl.lock_packages")
++        import("private.action.require.info", {alias = "package_info"})
++        import("core.base.json")
++        lock_packages(packages)
++        local records = {}
++        json.mark_as_array(records)
++        for _, instance in ipairs(packages) do
++            local record = package_info.purifier_info(instance)
++            record.name = instance:name()
++            record.buildhash = instance:buildhash()
++            record.kind = instance:kind() or "library"
++            record.patches = instance:patches()
++            record.resources = instance:resources()
++            record.system = instance:is_system()
++            record.thirdparty = instance:is_thirdparty()
++            if instance:repo() then
++                record.repo.commit = instance:repo():commit()
++                record.repo.directory = instance:repo():directory()
++            end
++            table.insert(records, record)
++        end
++        local files = project.allfiles()
++        json.mark_as_array(files)
++        io.writefile(os.getenv("XMAKE_PURIFIER_CAPTURE"), json.encode({packages=records, files=files,
++            mode=config.get("mode") or "release", nativeLock=io.load(project.requireslock())}, {pretty=true, orderkeys=true}))
++    end
+     cprint("outputdir: ${bright}%s", option.get("packagedir"))
+     cprint("${color.success}download packages ok")
+     return packages
+--- a/xmake/modules/private/action/require/impl/install_packages.lua
++++ b/xmake/modules/private/action/require/impl/install_packages.lua
+@@ -390,6 +390,7 @@
+ 
+ -- should fetch package?
+ function _should_fetch_package(instance)
++    if os.getenv("XMAKE_PURIFIER_FROZEN") == "1" then return true end
+     if instance:is_fetchonly() or not option.get("force") or
+         (option.get("shallow") and not instance:is_toplevel()) then
+         return true
+@@ -402,6 +403,9 @@
+     local result = _g.package_status_cache[tostring(instance)]
+     if result == nil then
+         result = package.should_install(instance) or false
++        if result and os.getenv("XMAKE_PURIFIER_FROZEN") == "1" then
++            raise("prepared Nix package missing or incompatible: %s", instance:displayname())
++        end
+         _g.package_status_cache[tostring(instance)] = result
+     end
+     return result
+@@ -702,6 +706,23 @@
+ 
+     -- load packages
+     local packages = package.load_packages(requires, opt)
++    if os.getenv("XMAKE_PURIFIER_PROFILE") then
++        import("core.base.json")
++        local profile = assert(json.loadfile(os.getenv("XMAKE_PURIFIER_PROFILE")))
++        for _, instance in ipairs(packages) do
++            local found = false
++            for _, expected in ipairs(profile.packages) do
++                local repo = instance:repo()
++                if expected.name == instance:name() and expected.version == instance:version_str()
++                    and expected.buildhash == instance:buildhash() and repo and
++                    expected.repo.url == repo:url() and expected.repo.commit == repo:commit() then
++                    found = true
++                    break
++                end
++            end
++            assert(found, "native package graph differs from the captured profile: " .. instance:name())
++        end
++    end
+ 
+     -- get package installation dependencies
+     local installdeps = _get_package_installdeps(packages)
+--- a/xmake/modules/private/action/require/impl/repository.lua
++++ b/xmake/modules/private/action/require/impl/repository.lua
+@@ -29,6 +29,16 @@
+ 
+ -- get package directory from the locked repository
+ function _get_packagedir_from_locked_repo(packagename, locked_repo)
++    if os.getenv("XMAKE_PURIFIER_REPOSITORIES") then
++        for _, repo in ipairs(repositories()) do
++            if repo:url() == locked_repo.url and repo:commit() == locked_repo.commit and repo:branch() == locked_repo.branch then
++                local dir = path.join(repo:directory(), "packages", packagename:sub(1, 1), packagename)
++                assert(os.isfile(path.join(dir, "xmake.lua")), "locked recipe missing: " .. packagename)
++                return {dir, repo}
++            end
++        end
++        raise("locked repository identity is not prepared for %s", packagename)
++    end
+ 
+     -- find global repository directory
+     local repo_global
+@@ -38,6 +48,13 @@
+             break
+         end
+     end
++    if not repo_global and os.getenv("XMAKE_PURIFIER_CAPTURE") then
++        -- A pinned commit remains authoritative when the configured default
++        -- branch is implicit. Retain its ordinary logical repository name.
++        for _, repo in ipairs(repositories()) do
++            if locked_repo.url == repo:url() then repo_global = repo; break end
++        end
++    end
+     local reponame = hash.strhash128(locked_repo.url .. (locked_repo.commit or "")) .. ".lock"
+ 
+     -- get local repodir
+@@ -104,6 +121,9 @@
+         local dir = path.join(repodir_local, "packages", packagename:sub(1, 1), packagename)
+         if os.isdir(dir) and os.isfile(path.join(dir, "xmake.lua")) then
+             local repo = repository.load(reponame, locked_repo.url, locked_repo.branch, false)
++            if os.getenv("XMAKE_PURIFIER_CAPTURE") and repo_global then
++                repo:name_set(repo_global:name())
++            end
+             foundir = {dir, repo}
+             vprint("lock package(%s) in %s from repository(%s)/%s", packagename, dir, locked_repo.url, locked_repo.commit)
+         end
+@@ -113,6 +133,20 @@
+ 
+ -- get all repositories
+ function repositories()
++    if os.getenv("XMAKE_PURIFIER_REPOSITORIES") then
++        if not _g._PURIFIER_REPOSITORIES then
++            import("core.base.json")
++            local records = assert(json.loadfile(os.getenv("XMAKE_PURIFIER_REPOSITORIES_FILE")))
++            local repos = {}
++            for _, item in ipairs(records) do
++                local repo = assert(repository.load(item.name, item.url, item.branch, true))
++                repo:commit_set(item.commit)
++                table.insert(repos, repo)
++            end
++            _g._PURIFIER_REPOSITORIES = repos
++        end
++        return _g._PURIFIER_REPOSITORIES
++    end
+     if _g._REPOSITORIES then
+         return _g._REPOSITORIES
+     end
+@@ -124,6 +158,7 @@
+ 
+ -- the remote repositories have been pulled?
+ function pulled()
++    if os.getenv("XMAKE_PURIFIER_REPOSITORIES") then return true end
+ 
+     local network = project.policy("network.mode")
+     if network == nil then
+@@ -211,6 +246,15 @@
+         end}
+         repo:commit_set(lastcommit)
+     end
++    if repo and os.getenv("XMAKE_PURIFIER_CAPTURE") and os.getenv("XMAKE_PURIFIER_REPO_NAMES") then
++        import("core.base.json")
++        for _, item in ipairs(assert(json.loadfile(os.getenv("XMAKE_PURIFIER_REPO_NAMES")))) do
++            if item.url == repo:url() and item.commit == repo:commit() and item.branch == repo:branch() then
++                repo:name_set(item.name)
++                break
++            end
++        end
++    end
+     return dir, repo
+ end
+ 
+--- a/xmake/modules/private/action/require/info.lua
++++ b/xmake/modules/private/action/require/info.lua
+@@ -482,3 +482,8 @@
+     -- leave environment
+     environment.leave()
+ end
++
++-- Native metadata export for the source-only purifier capture.
++function purifier_info(instance)
++    return _collect_package_info(instance)
++end
