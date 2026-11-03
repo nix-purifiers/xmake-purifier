@@ -16,8 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
-      - name: Capture native profile on this platform
-        run: nix run . -- --project examples/minimal lock
       - uses: actions/upload-artifact@v4
         with:
           name: native-profiles-${{ matrix.runner }}
