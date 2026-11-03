@@ -136,7 +136,7 @@
   },
   "toolVersions": {
     "gcc": "16.2.0",
-    "sdk": "8c73cf8a52d8131af78c10aca5410ca2ae8f4ba2eac0b147c92957ff8945eafe",
+    "sdk": "9402c466c08551746c45e93c10b85371c812585f7c3e3f8d4278d5104c6b7c9b",
     "xmake": "3.1.2"
   },
   "version": 1

@@ -214,7 +214,10 @@ def capture_profile(project, scratch, env, mode, lock_text, upgrade):
             or not package.get("repo")
         ):
             raise ValueError(
-                "initial support requires source packages from pinned Xmake recipe repositories"
+                f"source recipe required for {name}: "
+                f"system={package.get('system', False)}, "
+                f"thirdparty={package.get('thirdparty', False)}, "
+                f"repository={bool(package.get('repo'))}"
             )
         if package["kind"] not in {"library", "binary"}:
             raise ValueError("package kind is not yet supported: " + package["kind"])

@@ -218,6 +218,23 @@
  
      -- get package installation dependencies
      local installdeps = _get_package_installdeps(packages)
+--- a/xmake/modules/private/action/require/impl/package.lua
++++ b/xmake/modules/private/action/require/impl/package.lua
+@@ -150,6 +150,14 @@
+         require_extra.system = false
+     end
+ 
++    -- Scoped capture and realization always select native source recipes.
++    if os.getenv("XMAKE_PURIFIER_CAPTURE") or os.getenv("XMAKE_PURIFIER_REPOSITORIES") then
++        if require_extra.system == true then
++            os.raise("system packages are not prepared by xmake-purifier: %s", packagename)
++        end
++        require_extra.system = false
++    end
++
+     -- init required item
+     local required = {}
+     local parentinfo = opt.parentinfo
 --- a/xmake/modules/private/action/require/impl/repository.lua
 +++ b/xmake/modules/private/action/require/impl/repository.lua
 @@ -29,6 +29,16 @@
