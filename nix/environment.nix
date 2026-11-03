@@ -70,6 +70,9 @@ runCommand "purified-xmake-environment"
     export XMAKE_PKG_CACHEDIR="$TMPDIR/cache" XMAKE_PKG_INSTALLDIR="$out/packages"
     export XMAKE_PURIFIER_REPOSITORIES=${repositories} XMAKE_PURIFIER_REPOSITORIES_FILE=${repoMetadata}
     export XMAKE_PURIFIER_BLOBS=${sources} XMAKE_PURIFIER_PROFILE=${profileMetadata}
+    # Xmake assembles through the compiler driver; stdenv's raw GNU as is
+    # not an Xmake tool implementation (visible with ARM NEON sources).
+    export AS=${gcc}/bin/gcc
     export SOURCE_DATE_EPOCH=1
     python3 ${../xmake_purifier/build.py} ${metadata} "$PWD/work"
     cd work
