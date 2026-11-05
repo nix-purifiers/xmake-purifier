@@ -16,6 +16,8 @@
 }:
 {
   src,
+  nativeLibraries ? { },
+  nativeIncludeDirectories ? [ ],
   lockFile ? src + "/xmake-purifier.lock.json",
   requiresLock ? src + "/xmake-requires.lock",
   mode ? "release",
@@ -70,7 +72,7 @@ let
     inherit src;
     filter = srcFilter;
   };
-  project =
+  builtProject =
     runCommand "purified-xmake-project"
       {
         nativeBuildInputs = [
@@ -97,6 +99,19 @@ let
         ${lib.optionalString doCheck "xmake test -y"}
         ${installCommand}
       '';
+  projections = lib.optionalAttrs (nativeLibraries != { }) (
+    purifier.nativeProjections {
+      producer = builtProject;
+      libraries = nativeLibraries;
+      includeDirectories = nativeIncludeDirectories;
+      system = stdenv.hostPlatform.system;
+      targetMetadata.xmake = nativeXmake.version;
+      inherit runCommand python3;
+    }
+  );
+  project = builtProject // {
+    inherit projections;
+  };
   release =
     runCommand "xmake-project-release"
       {
@@ -121,6 +136,6 @@ assert lock.problems == [ ];
     default = project;
   };
   tests = project;
-  inherit release;
+  inherit release projections;
   fetches = lock.entries;
 }

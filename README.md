@@ -99,6 +99,25 @@ versions, recipes and build IDs during preparation. An unprepared package fails
 instead of being installed outside Nix. Compiler, architecture, recipe and
 package-management overrides are guarded in locked workflows.
 
+## Native library projections
+
+Pass `nativeLibraries = { proof = "lib/libproof.so"; };` to
+`buildXmakeProject` to expose explicitly selected installed shared libraries.
+Use the host platform's `extensions.sharedLibrary` suffix when appropriate.
+`nativeIncludeDirectories` can record installed header directories.
+
+The result and `packages.project` expose `projections.native`, `python-ffi`,
+and `java-ffi`. The shared binary validator rejects missing files, escaping
+paths and incompatible architecture/library formats; the catalog records the
+producer, selected system and Xmake version. Select a target with a deliberate
+C ABI and supply its runtime closure. The helper does not infer exported
+signatures, turn static libraries into shared libraries, or generate bindings.
+
+The check builds an actual Xmake shared target against its locked static zlib
+recipe and calls the exported function through ordinary Python ctypes and Java
+FFM. Java 21 uses preview FFM flags. This fixture verifies a static dependency
+inside the shared target, not independent dynamic zlib loader selection.
+
 ## Credits
 
 The purifier idea was inspired by nixcloud's
