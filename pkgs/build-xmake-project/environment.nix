@@ -54,7 +54,7 @@ in
 assert lib.assertMsg (
   checked.data.toolVersions.xmake == nativeXmake.version
   && checked.data.toolVersions.gcc == gcc.version
-  && checked.data.toolVersions.sdk == builtins.hashFile "sha256" ./xmake.patch
+  && checked.data.toolVersions.sdk == builtins.hashFile "sha256" ../native-xmake/xmake.patch
 ) "xmake-purifier: native SDK changed; run xmake-purifier lock";
 runCommand "purified-xmake-environment"
   {
@@ -74,7 +74,7 @@ runCommand "purified-xmake-environment"
     # not an Xmake tool implementation (visible with ARM NEON sources).
     export AS=${gcc}/bin/gcc
     export SOURCE_DATE_EPOCH=1
-    python3 ${../xmake_purifier/build.py} ${metadata} "$PWD/work"
+    python3 ${../../xmake_purifier/build.py} ${metadata} "$PWD/work"
     cd work
     xmake g --network=private
     xmake f -m ${lib.escapeShellArg mode} --require=n -y

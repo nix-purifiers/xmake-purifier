@@ -17,14 +17,14 @@
 stdenvNoCC.mkDerivation {
   pname = "xmake-purifier";
   version = "0.1.0";
-  src = ../.;
+  src = ../..;
   nativeBuildInputs = [ makeWrapper ];
   dontBuild = true;
   installPhase = ''
     mkdir -p "$out/bin" "$out/lib/xmake-purifier"
-    cp -r xmake_purifier nix "$out/lib/xmake-purifier/"
+    cp -r xmake_purifier lib-overlays pkgs "$out/lib/xmake-purifier/"
     install -m755 bin/xmake-purifier "$out/bin/xmake-purifier"
-    substituteInPlace "$out/lib/xmake-purifier/nix/realize.nix" \
+    substituteInPlace "$out/lib/xmake-purifier/pkgs/cli/realize.nix" \
       --replace-fail '@nixpkgs@' '${nixpkgsSrc}' \
       --replace-fail '@purifier@' '${purifierSrc}'
     wrapProgram "$out/bin/xmake-purifier" \
@@ -43,7 +43,7 @@ stdenvNoCC.mkDerivation {
       --set XMAKE_PURIFIER_SYSTEM ${stdenv.hostPlatform.system} \
       --set XMAKE_PURIFIER_XMAKE_VERSION ${nativeXmake.version} \
       --set XMAKE_PURIFIER_GCC_VERSION ${gcc.version} \
-      --set XMAKE_PURIFIER_SDK_VERSION ${builtins.hashFile "sha256" ./xmake.patch} \
+      --set XMAKE_PURIFIER_SDK_VERSION ${builtins.hashFile "sha256" ../native-xmake/xmake.patch} \
       --set XMAKE_PURIFIER_WRAPPER_BIN "$out/bin"
     makeWrapper "$out/bin/xmake-purifier" "$out/bin/xmake" --add-flags '--native --'
     makeWrapper "$out/bin/xmake-purifier" "$out/bin/xrepo" --add-flags '--native --tool=xrepo --'

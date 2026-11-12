@@ -22,7 +22,7 @@ with tempfile.TemporaryDirectory(prefix="xmake-eval-") as temporary:
     profile = next(iter(original["profiles"]))
 
     def evaluate():
-        expr = f"let f=builtins.getFlake {json.dumps(str(REPO))}; in (import {REPO}/nix/read-lock.nix {{ lib=f.inputs.nixpkgs.lib; }} {{ src={root}; }}).problems"
+        expr = f"let f=builtins.getFlake {json.dumps(str(REPO))}; in (import {REPO}/lib-overlays/default/read-lock.nix {{ lib=f.inputs.nixpkgs.lib; }} {{ src={root}; }}).problems"
         return json.loads(
             subprocess.check_output(
                 ["nix", "eval", "--impure", "--json", "--expr", expr], text=True

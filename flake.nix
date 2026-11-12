@@ -20,13 +20,13 @@
       forAll = nixpkgs.lib.genAttrs systems;
       overlay = final: prev: {
         xmake-purifier = final.lib.makeScope final.newScope (scope: {
-          nativeXmake = scope.callPackage ./nix/xmake.nix { };
-          toolchain = scope.callPackage ./nix/toolchain.nix { };
-          cli = scope.callPackage ./nix/cli.nix {
+          nativeXmake = scope.callPackage ./pkgs/native-xmake/default.nix { };
+          toolchain = scope.callPackage ./pkgs/toolchain/default.nix { };
+          cli = scope.callPackage ./pkgs/cli/default.nix {
             nixpkgsSrc = nixpkgs;
             purifierSrc = purifier;
           };
-          buildXmakeProject = scope.callPackage ./nix/build-project.nix {
+          buildXmakeProject = scope.callPackage ./pkgs/build-xmake-project/default.nix {
             purifier = import (purifier + "/nix/lib") { inherit (final) lib; };
           };
         });
@@ -45,7 +45,8 @@
         default = (pkgsFor system).xmake-purifier.cli;
         cli = self.packages.${system}.default;
       });
-      lib.xmake-purifier.readLock = import ./nix/read-lock.nix { lib = nixpkgs.lib; };
+      lib.xmake-purifier =
+        (nixpkgs.lib.extend (import ./lib-overlays/default { }).overlay).xmake-purifier;
       apps = forAll (system: {
         default = {
           type = "app";
