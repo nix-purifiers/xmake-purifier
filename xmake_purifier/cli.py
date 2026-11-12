@@ -398,7 +398,7 @@ def realize(root, companion, requires_lock, mode, target="environment"):
         raise ValueError(
             "mode/system profile missing; run xmake-purifier lock --mode " + mode
         )
-    expression = Path(__file__).resolve().parent.parent / "nix/realize.nix"
+    expression = Path(__file__).resolve().parent.parent / "pkgs/cli/realize.nix"
     command = [
         "nix",
         "build",
